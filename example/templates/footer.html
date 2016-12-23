@@ -1,0 +1,15 @@
+<footer id="footer" class="footer">
+    <span id="todo-count" class="todo-count"><strong><%= data.itemsleft %></strong> items left</span>
+    <ul id="filters" class="filters">
+        <li>
+            <a class="<%= data.allselected %>" href="#/">All</a>
+        </li>
+        <li>
+            <a class="<%= data.activeselected %>"  href="#/active">Active</a>
+        </li>
+        <li>
+            <a class="<%= data.completedselected %>" href="#/completed">Completed</a>
+        </li>
+    </ul>
+    <button id="clear-completed" class="clear-completed">Clear completed</button>
+</footer>

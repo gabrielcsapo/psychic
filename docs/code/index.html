@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>Home - Documentation</title>
+
+    <script src="scripts/prettify/prettify.js"></script>
+    <script src="scripts/prettify/lang-css.js"></script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="https://code.ionicframework.com/ionicons/2.0.1/css/ionicons.min.css">
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+<body>
+
+<input type="checkbox" id="nav-trigger" class="nav-trigger" />
+<label for="nav-trigger" class="navicon-button x">
+  <div class="navicon"></div>
+</label>
+
+<label for="nav-trigger" class="overlay"></label>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="psychic.html">psychic</a><ul class='methods'><li data-type='method'><a href="psychic.html#.addClass">addClass</a></li><li data-type='method'><a href="psychic.html#.data">data</a></li><li data-type='method'><a href="psychic.html#.destroy">destroy</a></li><li data-type='method'><a href="psychic.html#.dispatch">dispatch</a></li><li data-type='method'><a href="psychic.html#.listen">listen</a></li><li data-type='method'><a href="psychic.html#.removeClass">removeClass</a></li><li data-type='method'><a href="psychic.html#.render">render</a></li><li data-type='method'><a href="psychic.html#.update">update</a></li></ul></li></ul><h3>Global</h3><ul><li><a href="global.html#defaultTemplate">defaultTemplate</a></li><li><a href="global.html#logger">logger</a></li></ul>
+</nav>
+
+<div id="main">
+    
+
+    
+
+
+
+    
+
+
+
+
+
+
+
+
+
+    
+
+
+    <section class="readme">
+        <article><h1>psychic</h1><p><a href="https://travis-ci.org/gabrielcsapo/psychic"><img src="https://travis-ci.org/gabrielcsapo/psychic.svg?branch=master" alt="Build Status"></a></p>
+<p>Tiny single purpose view engine, help componentize your javascript. Chemical will help you make super performant UI apps.</p>
+<p>No abstractions, limit sugar. Keep your self close to the browser, but create compostable, and reusable UIs.</p>
+<p>Compatible with any template engine that accepts a model, and returns HTML. Use precompiled templates for blazing performance.</p>
+<p>Compatible with AMD, CJS, or can be found at c$ if no module loader is used.</p>
+<p>Compatible with Google Closure Compiler</p>
+<h2>Features</h2><ul>
+<li>Reusable composition. (components, controls)</li>
+<li>Universal, works under NodeJS and the Browser</li>
+<li>Supports Progressive Enhancement, with Auto-Mounting<ul>
+<li>Render the view on the server</li>
+<li>Run the client along side the server generated HTML</li>
+<li>Chemical upgrades the components on the page</li>
+<li>Mix with Webpack entry points for great perf</li>
+</ul>
+</li>
+<li>Sugar'd APIs to help get things done<ul>
+<li>events</li>
+<li>component communication</li>
+<li>rendering</li>
+</ul>
+</li>
+<li>Blazing Fast</li>
+<li>Tiny (1.5kb gzipped)</li>
+</ul>
+<h2>Get Started</h2><pre class="prettyprint source lang-bash"><code>npm install psychic --save-dev</code></pre><h2>Basics</h2><p>Chemical tries to be ultra fast by limiting the actual representation from the declarative api, to rendered DOM elements.</p>
+<p>We generate HTML based on your outer Control's components. Events are wired to a single rendered container, utilizing a state machine like Redux - we can achieve some crazy performance.</p>
+<p>Extend any component at runtime using our declarative API, or leverage defining prototypes for parse time performance improvements!</p>
+<p>Chemical helps you manage events. We rely on native event implementations, but provide a small amount of sugar to abstract on them for you. Including condensing events to a single rendered root, detaching and reattaching at render time!</p>
+<p>Chemical has a full stack of lifeCycle events! You can listen for events that range from <code>afterRender</code>, to <code>beforeUpdate</code>.</p>
+<p>It's amazing we fit all of this into less than 2kb of compressed space! For an additional 1kb you can bring our state machine with! That's only 3kb gzipped to get similar functionality as ReactJS + Redux!</p>
+<p>And yes, it is universal JS compatible, and views can be rendered on the server.</p>
+<h2>Usage</h2><p>Generic Hello World</p>
+<pre class="prettyprint source lang-javascript"><code>var Component = require('psychic');
+
+var component = new Component({
+    template: function(data) { return data.message; },
+    message: 'Hello World'
+});
+
+component.renderInto(document.body);</code></pre><p>Compose components</p>
+<pre class="prettyprint source lang-javascript"><code>var Component = require('psychic');
+
+var component = new Component({
+    components: [
+        new Component({
+            template: function(){ return 'Hello World';}
+        })
+    ]
+});
+
+component.renderInto(document.body);</code></pre><p>Another way to do hello world, we provide a default template</p>
+<pre class="prettyprint source lang-javascript"><code>var Component = require('psychic');
+
+var component = new Component({
+    innerHTML: 'Hello World'
+});
+
+component.renderInto(document.body);</code></pre><p>We render components into this innerHTML for you. We collapse the representation of the DOM, and exploit the super fast innerHTML implementations developed over the years.</p>
+<pre class="prettyprint source lang-javascript"><code>var Component = require('psychic');
+
+var component = new Component({
+    template: function(data) {
+        return '&lt;chrome>' + data.innerHTML + '&lt;/chrome>';
+    },
+    components: [
+        new Component({
+            innerHTML: 'hello world'
+        })
+    ]
+});
+
+component.renderInto(document.body);</code></pre><h1>API</h1><p>Chemical currently has two core blocks to build with, <code>control</code> and <code>component</code>. A <code>control</code> is used when you expect a <code>component</code> to render. It adds a bit of extra decoration to a base component. The API is small and consists of these calls:</p>
+<ul>
+<li><code>component</code><ul>
+<li>methods<ul>
+<li>mix</li>
+<li>listen</li>
+<li>dispatch</li>
+<li>destroy</li>
+</ul>
+</li>
+<li>properties<ul>
+<li>guid</li>
+<li>$ (hashmap of child components)</li>
+</ul>
+</li>
+</ul>
+</li>
+<li><code>control</code> (in addition to the above)<ul>
+<li>methods<ul>
+<li>update</li>
+<li>renderInto</li>
+<li>render</li>
+<li>addClass</li>
+<li>removeClass</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<p><code>API EXAMPLES</code></p>
+<blockquote>
+<p>addClass</p>
+</blockquote>
+<pre class="prettyprint source"><code>var Component = require('psychic').component;
+new Component({
+  attributes: {
+    class: 'foo'
+  },
+  afterRender: function() {
+    this.addClass('bar');
+  }
+}).renderInto(document.body);</code></pre><p><code>var Component = require('psychic').component;</code></p>
+<pre class="prettyprint source lang-javascript"><code>// mix
+// mixes data into
+// the component root
+component.mix(data);
+
+
+// component hash
+// provides a quick and easy way to
+// access named components.
+//
+// components are only hashed on render
+// and not at contruction time
+var component = new Component({
+        name: 'myComponent'
+});
+component.render();
+component.$.myComponent;
+
+
+// guid
+//
+// instanced components will be provided with a guid for eventing
+// this guid changes on page reload, but persists while the application
+// is loaded
+component.guid
+
+// listen
+//
+// listen for browser events. Events are wired against outer container
+// nodes. Only the root rendered control will be listening, and delegating
+// to target child nodes when appropriate.
+//
+// listeners are tore down before every re-render. This is to encourage the
+// developer to think sparingly about event usage within the view library
+component.listen('click', function(e){
+        console.log('this component was clicked!');
+});
+
+// listeners should be inserted using afterRender.
+var component = new Component({
+        afterRender: function() {
+                this.listen('click', function(){});
+        }
+});
+
+// listeners attach to the parent node
+var component = new Component({
+        components: [
+            var component = new Component({
+               afterRender: function() {
+                   // the root rendered parent will own the click
+                   // the click will be delegated to this handler
+                   this.listen('click', function(){});
+               }
+            });   
+        ]
+});
+
+
+/// dispatch
+///
+/// dispatches event that listeners are waiting to receive
+/// dispatch is throttled to 1 call per 80ms. Plan accordingly. The best use of this
+/// is to request the state machine to draw the view.
+/// this does not influence native event dispatches, only those sent you .dispatch
+///
+component.listen('myevent', function(e){ console.log(e.data); });
+component.dispatch('myevent', data);
+
+/// destroy
+///
+/// Tears down the component, child components, event handlers, but does not
+/// destroy the instance.
+component.destroy();</code></pre><p><code>var Control = require('psychic').control;</code></p>
+<pre class="prettyprint source lang-javascript"><code>/// update
+///
+/// updates the component's internal rendering
+/// if passed data, will also call .mix, before re-rendering.
+///
+/// if .update is called on a parent that node will be replaced
+/// in the DOM.
+
+// with no data, just ask for a re-render, and reinsertion
+// into the DOM if has a represented node.
+control.update();
+
+// send data to use before rendering and DOM swap
+control.update({foo: 'bar'});
+
+
+/// renderInto
+///
+/// Renders a control into a DOM target.
+control.renderInto(document.body);
+
+
+/// render
+///
+/// Renders the control with the currently bound data set.
+/// Great for rendering on the server.
+/// We also provide a view engine that does this lifting for you.
+control.render();</code></pre><h2>Declarative Syntax API</h2><p>Components are mainly composed in Chemical using the declarative syntax. This allows natural composition that most developers are familiar with in view libraries.</p>
+<pre class="prettyprint source lang-javascript"><code>// the base default declarative syntax for a control object
+
+var definition = {
+    name: 'myComponent', // optional name for reference hashing
+    tag: 'div', // root node type, default is DIV
+    attributes: { // any DOM attribute to append to root node
+         'class': 'red',
+         'data-foo': 'bar'
+    },
+    afterRender: function(){}, // LifeCycle hooks
+    components: [ // composition block, add components for reuse
+        new Component()
+    ],
+    template: function(data) {
+        // the template provides the innerHTML structure of the component
+        // If a components block is defined on this component, data.innerHTML
+        // will be populated, so you can template chrome around your components
+        return 'Hello World'
+    },
+    innerHTML: '', // a simple string that is returned to the template, the default template renders this
+    myCustomFunction: function(){} // Methods you want to travel with the component
+};
+
+// instance a new component by passing it
+// the definition
+var control = new Control(definition);</code></pre><h2>Imperative Syntax API</h2><p>Sometimes we want to extend components for reusability. We also want to get some performance gains when defining new components. Chemical leans heavily on prototypal inheritance to get some nice performance from our paradigm.</p>
+<pre class="prettyprint source lang-javascript"><code>var Control = require('psychic').control;
+
+module.exports = function(data) {
+        // do some custom stuff here
+        Control.call(this, data);
+};</code></pre><h2>LifeCycle</h2><p>Chemical provides component LifeCycle events. <code>wip</code></p>
+<p>Here is a list of all the LifeCycle events that can be defined</p>
+<ul>
+<li><code>beforeUpdate</code> / <code>afterUpdate</code></li>
+<li><code>beforeRender</code> / <code>afterRender</code></li>
+<li><code>beforeDestroy</code> / <code>afterDestroy</code></li>
+<li><code>beforeDispatch</code> / <code>afterDispatch</code></li>
+</ul>
+<h2>Mounting</h2><p>Chemical allows you to render components on the server, and then mount them client side. It requires little to no effort on your part.
+Simply give your components a <code>name</code>.</p>
+<pre class="prettyprint source lang-jsx"><code>var Control = require('psychic').control;
+
+module.exports = new Control({
+    name: 'myMountableComponent',
+    components: [
+        new Control({
+            name: 'myButton',
+            template: &lt;button>Click Me&lt;/button>,
+            handlers: {
+                'click': function(e) {
+                    alert('I was clicked!');
+                }
+            }
+        })
+    ]
+});</code></pre><h2>Using a State Store / State Machine</h2><p>It is preferential to use a State Store to maintain the state of your component. Utilizing the <code>FLUX</code> or one way data flow model, we can increase reliability and performance of our UI.</p></article>
+    </section>
+
+
+
+
+
+
+</div>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.3</a> on Thu Dec 22 2016 17:47:10 GMT-0800 (PST) using the Minami theme.
+</footer>
+
+<script>prettyPrint();</script>
+<script src="scripts/linenumber.js"></script>
+</body>
+</html>
