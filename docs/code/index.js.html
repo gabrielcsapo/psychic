@@ -1,0 +1,601 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>index.js - Documentation</title>
+
+    <script src="scripts/prettify/prettify.js"></script>
+    <script src="scripts/prettify/lang-css.js"></script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="https://code.ionicframework.com/ionicons/2.0.1/css/ionicons.min.css">
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+<body>
+
+<input type="checkbox" id="nav-trigger" class="nav-trigger" />
+<label for="nav-trigger" class="navicon-button x">
+  <div class="navicon"></div>
+</label>
+
+<label for="nav-trigger" class="overlay"></label>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="psychic.html">psychic</a><ul class='methods'><li data-type='method'><a href="psychic.html#.addClass">addClass</a></li><li data-type='method'><a href="psychic.html#.data">data</a></li><li data-type='method'><a href="psychic.html#.destroy">destroy</a></li><li data-type='method'><a href="psychic.html#.dispatch">dispatch</a></li><li data-type='method'><a href="psychic.html#.listen">listen</a></li><li data-type='method'><a href="psychic.html#.removeClass">removeClass</a></li><li data-type='method'><a href="psychic.html#.render">render</a></li><li data-type='method'><a href="psychic.html#.update">update</a></li></ul></li></ul><h3>Global</h3><ul><li><a href="global.html#defaultTemplate">defaultTemplate</a></li><li><a href="global.html#logger">logger</a></li></ul>
+</nav>
+
+<div id="main">
+    
+    <h1 class="page-title">index.js</h1>
+    
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>/**
+ *  psychic, JavaScript Composition Library
+ *  Ultra Light, Super Small, Blazing UIs
+ *
+ */
+
+/* utilities */
+
+// psychic uses templates, define a default
+var defaultTemplate = function (data) {
+    return '&lt;div>' + data.html + '&lt;/div>';
+};
+
+// server side fill
+var document = typeof (window) === 'object' ? window.document : {};
+
+// debounce, for our throttled dispatch event
+function debounce(fn, delay) {
+    var timer = null;
+    return function () {
+        var context = this,
+            args = arguments;
+        clearTimeout(timer);
+        timer = setTimeout(function () {
+            fn.apply(context, args);
+        }, delay);
+    };
+}
+
+/**
+ *Attaches error messages to self
+ */
+var logger = function (errorMessage) {
+    var self = this;
+    self.log = self.log || [];
+    self.log.push(errorMessage);
+};
+
+/**
+ * Lazy/Shallow merge of a passed object to the component.
+ * @method data
+ * @memberof psychic
+ * @param {Object} definition - This object describes various things about the component
+ * @returns self
+ */
+var mix = function (definition) {
+    var self = this;
+
+    for (var k in definition) {
+        if (typeof definition[k] == 'object' &amp;&amp; self[k] &amp;&amp; k === 'attributes') {
+            self[k] = mix.call(self[k], definition[k]);
+        } else {
+            self[k] = definition[k];
+        }
+    }
+
+    return self;
+};
+
+
+/* lifecycle */
+
+// calls a lifecycle event
+var life = function (stage) {
+    var self = this;
+    var target = self.container || self.parent;
+    var func = self[stage];
+
+    function deferredLife() {
+        if (self.deferredLife &amp;&amp; self.deferredLife.length > 0) {
+            // fire deferred life cycle callbacks before
+            // firing the parents lifeCycle callback
+            for (var i = 0, len = self.deferredLife.length; i &lt; len; i++) {
+                var deferreditem = self.deferredLife.shift();
+                deferreditem.func.call(deferreditem.context);
+            }
+        }
+    }
+
+    if (func) {
+        if (target) {
+            // if this is a child component, defer it's life cycle event
+            target.deferredLife = target.deferredLife || [];
+            (function () {
+                var ctx = self;
+                var fn = func;
+                target.deferredLife.push({
+                    context: ctx,
+                    func: fn
+                });
+            }());
+        } else {
+            // call deferred, then fire parents state
+            deferredLife();
+            func.call(self);
+        }
+    } else {
+        // parent has no lifecycle for this state
+        deferredLife();
+    }
+    return self;
+};
+
+/**
+ * Destroys Component resources, does not destroy constructor
+ * @method destroy
+ * @memberof psychic
+ * @returns self
+ */
+var destroy = function () {
+    var self = this;
+    life.call(self, 'beforeDestroy');
+    var target = self.target;
+    if (target &amp;&amp; self.node) target.removeChild(self.node);
+    removeListeners.call(self);
+    self.node = void(0);
+    self.html = void(0);
+    destroyComponents.call(self);
+    life.call(self, 'afterDestroy');
+    return self;
+};
+
+// destroy component references
+var destroyComponents = function () {
+    var self = this;
+    for (var i = 0, len = self.components.length; i &lt; len; i++) {
+        self.components[i].parent = void(0);
+        destroy.call(self.components[i]);
+    }
+    return self;
+};
+
+
+/* rendering */
+
+/**
+ * Renders the component, but does not place into DOM. Can be used in NodeJS.
+ * @method render
+ * @memberof psychic
+ * @returns self
+ */
+var render = function () {
+    var self = this;
+    renderDOM.call(self);
+    return self;
+};
+
+// render the html of self component
+var renderHTML = function () {
+    var self = this;
+
+    if (!self.mount || self.node) {
+        var mount = self.parent ? (self.parent.mount || self.parent.name) + '_' + self.name : self.name;
+        self.mount = mount;
+    }
+
+    if (self.components &amp;&amp; self.components.length > 0) {
+        self.html = renderComponents.call(self);
+    }
+
+    var template = self['template'] || defaultTemplate;
+
+    self.html = template.call(self, self);
+
+    // we need to do some stuff for node rendering
+    // don't waste cycles on the client doing this
+    if (typeof window === 'undefined' || !self.node) {
+        var opentag = self.html.match(/&lt;\s*\w.*?>/);
+        if (!opentag || opentag.length === 0) {
+            logger.call(self, 'Error: The template could not generate proper html');
+            return;
+        }
+        var tag = opentag[0].indexOf(' ') > -1 ? opentag[0].split(' ')[0] : opentag[0].slice(0, opentag[0].length - 1);
+        var tagLength = tag.length;
+        // add attributes to the root node
+        for (var k in self.attributes) {
+            tag += ' ' + k + '="' + self.attributes[k] + '"';
+        }
+
+        if (self.name &amp;&amp; typeof window === 'undefined') {
+            mount = self.parent ? (self.parent.mount || self.parent.name) + '_' + self.name : self.name;
+            self.mount = mount;
+            tag += ' data-psychic-mount="' + mount + '"';
+        }
+
+        self.html = tag + self.html.substr(tagLength);
+        tag = '';
+
+        if (self.transform) self.transform.call(self);
+    }
+
+    return self.html;
+};
+
+// render the DOM elements for self component
+var renderDOM = function () {
+    var self = this;
+
+    life.call(self, 'beforeRender');
+
+    // generate the HTML represenation for the node
+    self.html = renderHTML.call(self);
+
+    if (self.parent || typeof window === 'undefined') {
+        // we don't need to render a node for anything
+        // that is a child, or done on the server
+        // exit now
+        life.call(this, 'afterRender');
+        return;
+    }
+
+    // only generate a new node if we do not have
+    // a root node
+    var node = document.createElement('div');
+    node.innerHTML = self.html;
+
+    if (!self.node) {
+
+        var mount = self.mount;
+        var mountNode = document.querySelectorAll('[data-psychic-mount=' + mount + ']');
+
+        // get the node
+        if (mountNode.length > 0) {
+            self.node = mountNode[0];
+            self.isMounted = true;
+        } else {
+            self.node = node.children[0];
+        }
+
+    } else {
+
+        self.node.innerHTML = node.children[0].innerHTML;
+
+    }
+
+    // not needed for Node render
+    // set attributes
+    for (var k in self.attributes) {
+        self.node.setAttribute(k, self.attributes[k]);
+    }
+
+    if (self.node.children &amp;&amp; self.components &amp;&amp; self.components.length) {
+        // wire children
+        for (var i = 0, len = self.node.children.length; i &lt; len; i++) {
+            if (self.components[i]) {
+                var old_node = self.components[i].node || 'undefined';
+                self.components[i].node = self.node.children[i];
+
+                for (var j in self.components[i].attributes) {
+                    self.components[i].node.setAttribute(j, self.components[i].attributes[j]);
+                }
+                /*
+                    recursively set child handlers
+                    from this level, the parent node is created
+                    and requires no waiting to bind children
+                */
+                var setChildHandlers = function(parent) {
+                    if (parent.components) {
+                        for (var k = 0, len = parent.components.length; k &lt; len; k++) {
+                            handlers.call(parent.components[k]);
+                            if (parent.components[k].components.length > 0) {
+                                setChildHandlers(parent.components[k]);
+                            }
+                        }
+                    }
+                }
+                /*
+                    if the component is initialized
+                    but the node has been replaced
+                    the handlers need to be called again
+                */
+                if (!self.components[i].initialized || (old_node.outerHTML !== self.components[i].node.outerHTML)) {
+                    handlers.call(self.components[i]);
+                    setChildHandlers(self.components[i]);
+                }
+                self.components[i].initialized = true;
+            }
+        }
+    }
+
+    if (!self.initialized) {
+        handlers.call(self);
+        self.initialized = true;
+    }
+
+    life.call(this, 'afterRender');
+    return self.node;
+};
+
+// render just the components
+var renderComponents = function () {
+    var self = this;
+    self.html = '';
+    self.components = self.components || [];
+
+    for (var i = 0, len = self.components.length; i &lt; len; i++) {
+
+        self.components[i].parent = self;
+        self.components[i].container = self.container || self.parent || self;
+        render.call(self.components[i]);
+        self.html += self.components[i].html;
+    }
+    return self.html;
+};
+
+/**
+ * Re-renders the component, replaces DOM node, if a new Definition is passed in, the component is updated.
+ * @method update
+ * @memberof psychic
+ * @param {Object} [definition] - This object describes various things about the component
+ * @returns self
+ */
+var update = function (definition) {
+    var self = this;
+
+    life.call(self, 'beforeUpdate');
+
+    if (definition) mix.call(self, definition);
+
+    render.call(self);
+
+    // run an after update hook if developer
+    // needs to know when UI component is in the DOM
+    life.call(self, 'afterUpdate');
+    return self;
+};
+
+/* DOM helpers * /
+
+/**
+ * Renders the component, but does not place into DOM. Can be used in NodeJS.
+ * @method renderInto
+ * @memberof psychic
+ * @param {Object} target - DOM Node that this component should render into
+ * @returns self
+ */
+var renderInto = function (target) {
+    var self = this;
+    self.target = target;
+    render.call(self);
+
+    if (!self.isMounted) {
+        target.appendChild(self.node);
+    }
+
+    return self;
+};
+
+/**
+ * Adds a class to the node
+ * @method addClass
+ * @memberof psychic
+ * @param {Object} _class - This string represenation of the class that is to be added
+ * return self
+ */
+var addClass = function (_class) {
+    this.node.setAttribute('class', this.node.getAttribute('class') + ' ' + _class);
+    this.html = this.node.outerHTML;
+    return this;
+};
+
+/**
+ * Removes a class to the node
+ * @method removeClass
+ * @memberof psychic
+ * @param {Object} _class - This string represenation of the class that is to be removed
+ * return self
+ */
+var removeClass = function (_class) {
+    this.node.setAttribute('class', (this.node.getAttribute('class')).replace(' ' + _class, ''));
+    this.node.getAttribute('class');
+    this.html = this.node.outerHTML;
+    return this;
+};
+
+
+/* events */
+
+/**
+ * Adds a listener for this component.
+ * @method listen
+ * @memberof psychic
+ * @param {string} event - The name of the event. The event will be added to the rendered node of this component, if no node is present, it will be added to document.
+ * @param {Function} handler - The event handler to handle when this event is dispatched.
+ * @returns self
+ */
+var listen = function (event, handler) {
+    var self = this;
+    var target = self.node ? self.node : (self.container ? self.container.node : document);
+    var events = self['events'] || [];
+
+    events.push({
+        type: event,
+        handler: handler
+    });
+
+    self['events'] = events;
+
+    var stringify = function(str) {
+        str = str.replace(/&amp;amp;/g, "&amp;");
+        str = str.replace(/&amp;gt;/g, ">");
+        str = str.replace(/&amp;lt;/g, "&lt;");
+        str = str.replace(/&amp;quot;/g, "\"");
+        str = str.replace(/&amp;#039;/g, "'");
+        return str;
+    }
+
+    // handle the event with this decorater
+    var handle = function (event) {
+        // If the target has an outerHTML
+        // we should check if that matches the current listner
+        // If it doesn't that means this has no node and can be dispatched to anyone
+        if(event.target &amp;&amp; event.target.outerHTML) {
+            var html = stringify(event.target.outerHTML);
+            if(self.html.indexOf(html) > -1) {
+                handler.call(this, event);
+            }
+        } else {
+            handler.call(this, event);
+        }
+    };
+
+    if (target &amp;&amp; target.addEventListener) target.addEventListener(event, handle, false);
+
+    return self;
+};
+
+// attach handlers that are listed in the handlers block
+var handlers = function () {
+    var self = this;
+    for (var k in self.handlers) {
+        self.listen(k, self.handlers[k].bind(self));
+    }
+    return self;
+};
+
+/**
+ * Dispatch event on component
+ * @method dispatch
+ * @memberof psychic
+ * @param {string} Event Name - The name of the event. The event will be added to the rendered node of this component, if no node is present, it will be added to document.
+ * @returns self
+ */
+var dispatch = function (e, data) {
+
+    var self = this;
+
+    // get the dispatch target
+    // default to document
+    var target = self.node ? self.node : (self.container ? self.container.node : document);
+
+    var event = new Event(e);
+    event.data = data;
+
+    life.call(self, 'beforeDispatch');
+
+    target.dispatchEvent(event);
+
+    life.call(self, 'afterDispatch');
+
+    return self;
+};
+
+// removes all listeners
+var removeListeners = function () {
+    var self = this;
+    var target = self.node || document;
+    var events = self['events'];
+
+    for (var i = events &amp;&amp; events.length - 1; i >= 0; i--) {
+        target.removeEventListener(events[i].type, events[i].handler, false);
+    }
+
+    self['events'] = [];
+    return self;
+};
+
+
+/* constructors */
+
+/**
+ * Represents an HTML JavaScript Component
+ * @constructor psychic
+ * @param {Object} definition - This object describes various things about the component
+ * @returns component
+ */
+var psychic = function (definition) {
+    // default is a control
+    // you can call the constructors directly
+    // if you need a non render component
+    // use psychic.component;
+    control.call(this, definition);
+};
+
+var base = function (definition) {
+    'use strict';
+
+    var self = this;
+    self.$ = {};
+
+    self['mix'] = mix;
+
+    // setup self components lazy style `mixin`
+    mix.call(self, definition);
+
+    if (!self.components) self.components = [];
+
+    for (var i = 0, len = self.components.length; i &lt; len; i++) {
+        // lazily name the components on render
+        // don't re-ref is already named, should throw
+        // @todo throw
+        if (self.components[i].name &amp;&amp; !self.$[self.components[i].name]) {
+            self.$[self.components[i].name] = self.components[i];
+        }
+    }
+};
+
+// component has no UI needs
+var component = psychic.component = function (def) {
+    var self = this;
+    self['listen'] = listen;
+    self['dispatch'] = debounce(dispatch, 80);
+    self['dispatchImmediate'] = dispatch;
+    self['destroy'] = destroy;
+    base.call(this, def);
+};
+
+// control renders as UI, comes with UI bits
+var control = psychic.control = function (def) {
+    var self = this;
+    self['update'] = update;
+    self['renderInto'] = renderInto;
+    self['render'] = render;
+    self['addClass'] = addClass;
+    self['removeClass'] = removeClass;
+    component.call(this, def);
+};
+
+// set some meta
+psychic.version = '0.0.1';
+
+module.exports = psychic;
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.3</a> on Thu Dec 22 2016 17:47:10 GMT-0800 (PST) using the Minami theme.
+</footer>
+
+<script>prettyPrint();</script>
+<script src="scripts/linenumber.js"></script>
+</body>
+</html>

@@ -1,0 +1,28 @@
+{
+  "name": "psychic-todo",
+  "version": "1.0.0",
+  "description": "a todo example",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "contributors": [
+    {
+      "name": "Gabriel J. Csapo",
+      "email": "gabecsapo@gmail.com"
+    },
+    {
+      "name": "Derek Michael Anderson",
+      "email": "toxigenicpoem@gmail"
+    }
+  ],
+  "license": "ISC",
+  "devDependencies": {
+    "grunt": "^1.0.1",
+    "grunt-browserify": "^5.0.0",
+    "grunt-jst-redux": "^0.7.3",
+    "minifyify": "^7.3.4",
+    "todomvc-app-css": "^2.0.6",
+    "todomvc-common": "^1.0.3"
+  }
+}

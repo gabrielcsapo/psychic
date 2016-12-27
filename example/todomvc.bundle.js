@@ -1,0 +1,1068 @@
+(function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
+'use strict';
+
+var component = require('../../../index');
+var templates = require('../templates');
+var controller = require('../controllers/todo');
+
+module.exports = function(data) {
+    this.allselected = data.allselected ? 'selected' : '';
+    this.activeselected = data.allselected ? 'selected' : '';
+    this.completedselected = data.allselected ? 'selected' : '';
+
+    this.setActiveFilter = function(value) {
+        var map = {
+            active: 'activeselected',
+            all: 'allselected',
+            completed: 'completedselected'
+        };
+
+        if (map[value]) {
+            this.allselected = '';
+            this.activeselected = '';
+            this.completedselected = '';
+            this[map[value]] = 'selected';
+
+            var filter = (value === 'completed') ? value : '';
+            if (value === 'all') {
+                controller.filter();
+            } else {
+                controller.filter({
+                    status: filter
+                });
+            }
+        };
+
+
+    };
+
+    this.template = templates['templates/footer.html'];
+    component.call(this, data);
+};
+
+},{"../../../index":11,"../controllers/todo":6,"../templates":9}],2:[function(require,module,exports){
+'use strict';
+
+var component = require('../../../index');
+var templates = require('../templates');
+
+module.exports = function (data) {
+    this.template = templates['templates/header.html'];
+    return component.call(this, data);
+};
+
+},{"../../../index":11,"../templates":9}],3:[function(require,module,exports){
+'use strict';
+
+var component = require('../../../index');
+var templates = require('../templates');
+
+module.exports = function (data) {
+    this.template = templates['templates/main.html'];
+    component.call(this, data);
+};
+
+},{"../../../index":11,"../templates":9}],4:[function(require,module,exports){
+'use strict';
+
+var component = require('../../../index');
+var templates = require('../templates');
+
+module.exports = function (data) {
+    this.template = templates['templates/todo.html'];
+    component.call(this, data);
+};
+
+},{"../../../index":11,"../templates":9}],5:[function(require,module,exports){
+module.exports = {
+    ENTER_KEY: 13,
+    ESCAPE_KEY: 27
+};
+},{}],6:[function(require,module,exports){
+var constants = require('../constants');
+var store = require('../stores/todo');
+
+document.addEventListener('click', function(event) {
+    var target = event.target;
+
+    // clear completed items
+    if (target.id === 'clear-completed') {
+
+        store.delete(store.find({
+            status: 'completed'
+        }));
+        return;
+    }
+
+    if (target.id === 'toggle-all') {
+        // get all todos from the store
+        var todos = store.get();
+        var status = target.checked ? 'completed' : '';
+
+        // set view meta data we want before the store
+        // notifies the view of updates to items
+        store.viewstate.toggleall = target.checked ? 'checked' : '';
+
+        // update all the todos to be completed
+        for (var i = 0; i < todos.length; i++) {
+            store.update(i, {
+                status: status
+            }, false)
+        }
+
+        return;
+    }
+
+    // if the toggle checked
+    if (target.className.indexOf('destroy') > -1) {
+        // update the store
+        var li = target.parentNode.parentNode;
+        store.delete(li.getAttribute('data-index'));
+    }
+
+    // if the toggle checked
+    if (target.className.indexOf('toggle') > -1) {
+
+        // update the store
+        var li = target.parentNode;
+        var status = target.checked ? 'completed' : '';
+
+        // set the class on the DOM for animated strike through
+        li.className = status;
+        store.update(li.getAttribute('data-index'), {
+            status: status
+        }, false);
+    }
+}, false);
+
+window.addEventListener('keypress', function(event) {
+    if (event.keyCode === constants.ENTER_KEY) {
+        if ('new-todo' === event.target.id) {
+            //new todo
+            var todo = event.target.value;
+            store.add({
+                label: todo
+            });
+
+            event.target.value = '';
+        }
+        return;
+    }
+
+    // focus on the new-todo input box if someone is
+    // typing a todo
+    document.getElementById('new-todo').focus();
+}, false);
+
+window.addEventListener('keyup', function(event) {
+    if (event.keyCode === constants.ESCAPE_KEY) {
+
+    }
+}, false);
+
+// exportable api
+module.exports = {
+    filter: function(query) {
+        if (query) {
+            store.filter(query);
+            store.dispatch();
+        } else {
+            store.filter();
+            store.dispatch();
+        }
+    },
+    translateTodos: function(todos) {
+        // creates an array of todos from the store
+        var Todo = require('../components/todo');
+        var components = [];
+        for (var i = 0; i < todos.length; i++) {
+            // create a todo item
+            components.push(new Todo({
+                tag: 'li',
+                attributes: {
+                    'class': todos[i].status,
+                    'data-index': todos[i].index
+                },
+                status: todos[i].status,
+                content: todos[i].label
+            }));
+        }
+        return components;
+    }
+};
+
+},{"../components/todo":4,"../constants":5,"../stores/todo":8}],7:[function(require,module,exports){
+// import helpers
+var router = require('../../router');
+
+// load the stored todos
+
+var store = require('./stores/todo');
+store.load();
+
+// render view
+var MainView = require('./views/main');
+var target = document.querySelector('#todoapp');
+MainView.renderInto(target);
+
+// application routes for todo
+router.intitialize(function (route) {
+    // 404
+});
+
+router.bind('/', function () {
+    // set the filter which will also call the
+    // store dispatch
+    MainView.$.footer.setActiveFilter('all');
+});
+
+router.bind('/active', function () {
+    MainView.$.footer.setActiveFilter('active');
+});
+
+router.bind('/completed', function () {
+    MainView.$.footer.setActiveFilter('completed');
+});
+
+
+// controls first view
+if (router.routes[location.pathname]) {
+    router.routes[location.pathname]();
+} else {
+    var hash = location.hash.replace('#', '');
+    if(hash.length === 0) hash = '/';
+    router.change(hash);
+}
+
+},{"../../router":12,"./stores/todo":8,"./views/main":10}],8:[function(require,module,exports){
+var todos = [];
+var lastquery;
+var filter = void(0);
+
+module.exports = {
+    viewstate: {},
+    filter: function(query) {
+        if (!query) {
+            filter = void(0);
+            return;
+        }
+
+        filter = this.find(query);
+        lastquery = query;
+    },
+    add: function(item) {
+        if (!todos) {
+            todos = [];
+        }
+        item.status = '';
+        todos.push(item);
+
+        if (filter) {
+            this.filter(lastquery);
+        }
+
+        this.save();
+        this.dispatch();
+    },
+    get: function() {
+        if (filter) {
+            return filter;
+        }
+        return todos;
+    },
+    update: function(idx, props, notify) {
+        for (var k in props) {
+            todos[idx][k] = props[k];
+        }
+
+        this.save();
+
+        if (filter) {
+            filter = this.find(lastquery);
+        }
+
+        this.dispatch();
+    },
+    dispatch: function(nodraw) {
+        var e = new Event('todo-store-updated');
+        e.nodraw = nodraw;
+        e.store = this;
+        document.dispatchEvent(e);
+    },
+    delete: function(idx) {
+        if (idx instanceof Array) {
+            for (var i = idx.length - 1; i >= 0; i--) {
+                todos.splice(idx[i].index, 1);
+            }
+        } else {
+            todos.splice(idx, 1);
+        }
+        var e = new Event('todo-store-updated');
+        e.store = this;
+        this.save();
+        document.dispatchEvent(e);
+    },
+    save: function() {
+        localStorage.setItem('todos', JSON.stringify(todos));
+    },
+    load: function() {
+        todos = JSON.parse(localStorage.getItem('todos'));
+    },
+    find: function(query) {
+        var results = [];
+        for (var i = 0; i < todos.length; i++) {
+            var todo = todos[i];
+            var match = true;
+            for (var k in query) {
+                if (todo[k] !== query[k]) {
+                    match = false;
+                }
+            }
+            if (match) {
+                todo.index = i;
+                results.push(todo);
+            }
+        }
+        return results;
+    }
+}
+
+},{}],9:[function(require,module,exports){
+this["JST"] = this["JST"] || {};
+
+this["JST"]["templates/footer.html"] = function(data) {
+var __t, __p = '', __e = _.escape;
+__p += '<footer id="footer" class="footer">\n    <span id="todo-count" class="todo-count"><strong>' +
+((__t = ( data.itemsleft )) == null ? '' : __t) +
+'</strong> items left</span>\n    <ul id="filters" class="filters">\n        <li>\n            <a class="' +
+((__t = ( data.allselected )) == null ? '' : __t) +
+'" href="#/">All</a>\n        </li>\n        <li>\n            <a class="' +
+((__t = ( data.activeselected )) == null ? '' : __t) +
+'"  href="#/active">Active</a>\n        </li>\n        <li>\n            <a class="' +
+((__t = ( data.completedselected )) == null ? '' : __t) +
+'" href="#/completed">Completed</a>\n        </li>\n    </ul>\n    <button id="clear-completed" class="clear-completed">Clear completed</button>\n</footer>';
+return __p
+};
+
+this["JST"]["templates/header.html"] = function(data) {
+var __t, __p = '', __e = _.escape;
+__p += '<header id="header" class="header">\n    <h1>todos</h1>\n    <input id="new-todo" class="new-todo" placeholder="What needs to be done?" autofocus>\n</header>';
+return __p
+};
+
+this["JST"]["templates/main.html"] = function(data) {
+var __t, __p = '', __e = _.escape;
+__p += '<section id="main" class="main">\n    <input id="toggle-all" class="toggle-all" type="checkbox" ' +
+((__t = ( data.toggleall )) == null ? '' : __t) +
+'>\n    <label for="toggle-all">Mark all as complete</label>\n    <ul id="todo-list" class="todo-list">\n        <!-- render components here -->\n        ' +
+((__t = ( data.html )) == null ? '' : __t) +
+'\n    </ul>\n</section>\n';
+return __p
+};
+
+this["JST"]["templates/todo.html"] = function(data) {
+var __t, __p = '', __e = _.escape;
+__p += '<li>\n    <input type="checkbox" class="toggle" ' +
+((__t = ( data.status === 'completed' ? 'checked' : '' )) == null ? '' : __t) +
+'>\n    <label>' +
+((__t = ( data.content )) == null ? '' : __t) +
+'</label>\n    <button class="destroy"></button>\n</li>\n';
+return __p
+};
+
+var _ = {escape: escape};
+
+module.exports =this["JST"];
+},{}],10:[function(require,module,exports){
+//import components
+var Component = require('../../../index');
+
+var Header = require('../components/header');
+var Main = require('../components/main');
+var Todo = require('../components/todo');
+var Footer = require('../components/footer');
+var Controller = require('../controllers/todo');
+
+// declare and name components for exporting
+// psychic does NOT do this by default, YOU decide
+// when you need this
+var components = {
+    header: new Header({}),
+    main: new Main({
+        content: []
+    }),
+    footer: new Footer({
+        itemsleft: 0
+    })
+};
+
+// compose view
+var container = new Component({
+    components: [
+        components.header,
+        components.main,
+        components.footer
+    ]
+});
+
+document.addEventListener('todo-store-updated', function(event) {
+    console.log(event);
+    // listen for the store to be updated
+    var store = event.store;
+    var viewstate = store.viewstate;
+
+    // update the view components
+    components.footer.itemsleft = store.find({
+        status: ''
+    }).length;
+
+    components.main.update({
+        components: Controller.translateTodos(store.get()),
+        toggleall: viewstate.toggleall ? 'checked' : ''
+    });
+
+    // ask the container to update it's DOM reference
+    container.update();
+}, false);
+
+// export reference to the components we need
+container.$ = components;
+
+// we want to export our components
+module.exports = container;
+
+},{"../../../index":11,"../components/footer":1,"../components/header":2,"../components/main":3,"../components/todo":4,"../controllers/todo":6}],11:[function(require,module,exports){
+/**
+ *  psychic, JavaScript Composition Library
+ *  Ultra Light, Super Small, Blazing UIs
+ *
+ */
+
+/* utilities */
+
+// psychic uses templates, define a default
+var defaultTemplate = function (data) {
+    return '<div>' + data.html + '</div>';
+};
+
+// server side fill
+var document = typeof (window) === 'object' ? window.document : {};
+
+// debounce, for our throttled dispatch event
+function debounce(fn, delay) {
+    var timer = null;
+    return function () {
+        var context = this,
+            args = arguments;
+        clearTimeout(timer);
+        timer = setTimeout(function () {
+            fn.apply(context, args);
+        }, delay);
+    };
+}
+
+/**
+ *Attaches error messages to self
+ */
+var logger = function (errorMessage) {
+    this.log = this.log || [];
+    this.log.push(errorMessage);
+};
+
+/**
+ * Lazy/Shallow merge of a passed object to the component.
+ * @method data
+ * @memberof psychic
+ * @param {Object} definition - This object describes various things about the component
+ * @returns self
+ */
+var mix = function (definition) {
+    var self = this;
+
+    for (var k in definition) {
+        if (typeof definition[k] == 'object' && self[k] && k === 'attributes') {
+            self[k] = mix.call(self[k], definition[k]);
+        } else {
+            self[k] = definition[k];
+        }
+    }
+
+    return self;
+};
+
+
+/* lifecycle */
+
+// calls a lifecycle event
+var life = function (stage) {
+    var self = this;
+    var target = self.container || self.parent;
+    var func = self[stage];
+
+    function deferredLife() {
+        if (self.deferredLife && self.deferredLife.length > 0) {
+            // fire deferred life cycle callbacks before
+            // firing the parents lifeCycle callback
+            for (var i = 0, len = self.deferredLife.length; i < len; i++) {
+                var deferreditem = self.deferredLife.shift();
+                deferreditem.func.call(deferreditem.context);
+            }
+        }
+    }
+
+    if (func) {
+        if (target) {
+            // if this is a child component, defer it's life cycle event
+            target.deferredLife = target.deferredLife || [];
+            (function () {
+                var ctx = self;
+                var fn = func;
+                target.deferredLife.push({
+                    context: ctx,
+                    func: fn
+                });
+            }());
+        } else {
+            // call deferred, then fire parents state
+            deferredLife();
+            func.call(self);
+        }
+    } else {
+        // parent has no lifecycle for this state
+        deferredLife();
+    }
+    return self;
+};
+
+/**
+ * Destroys Component resources, does not destroy constructor
+ * @method destroy
+ * @memberof psychic
+ * @returns self
+ */
+var destroy = function () {
+    var self = this;
+    life.call(self, 'beforeDestroy');
+    var target = self.target;
+    if (target && self.node) target.removeChild(self.node);
+    removeListeners.call(self);
+    self.node = void(0);
+    self.html = void(0);
+    destroyComponents.call(self);
+    life.call(self, 'afterDestroy');
+    return self;
+};
+
+// destroy component references
+var destroyComponents = function () {
+    var self = this;
+    for (var i = 0, len = self.components.length; i < len; i++) {
+        self.components[i].parent = void(0);
+        destroy.call(self.components[i]);
+    }
+    return self;
+};
+
+
+/* rendering */
+
+/**
+ * Renders the component, but does not place into DOM. Can be used in NodeJS.
+ * @method render
+ * @memberof psychic
+ * @returns self
+ */
+var render = function () {
+    var self = this;
+    renderDOM.call(self);
+    return self;
+};
+
+// render the html of self component
+var renderHTML = function () {
+    var self = this;
+
+    if (!self.mount || self.node) {
+        var mount = self.parent ? (self.parent.mount || self.parent.name) + '_' + self.name : self.name;
+        self.mount = mount;
+    }
+
+    if (self.components && self.components.length > 0) {
+        self.html = renderComponents.call(self);
+    }
+
+    var template = self['template'] || defaultTemplate;
+
+    self.html = template.call(self, self);
+
+    // we need to do some stuff for node rendering
+    // don't waste cycles on the client doing this
+    if (typeof window === 'undefined' || !self.node) {
+        var opentag = self.html.match(/<\s*\w.*?>/);
+        if (!opentag || opentag.length === 0) {
+            logger.call(self, 'Error: The template could not generate proper html');
+            return;
+        }
+        var tag = opentag[0].indexOf(' ') > -1 ? opentag[0].split(' ')[0] : opentag[0].slice(0, opentag[0].length - 1);
+        var tagLength = tag.length;
+        // add attributes to the root node
+        for (var k in self.attributes) {
+            tag += ' ' + k + '="' + self.attributes[k] + '"';
+        }
+
+        if (self.name && typeof window === 'undefined') {
+            mount = self.parent ? (self.parent.mount || self.parent.name) + '_' + self.name : self.name;
+            self.mount = mount;
+            tag += ' data-psychic-mount="' + mount + '"';
+        }
+
+        self.html = tag + self.html.substr(tagLength);
+        tag = '';
+
+        if (self.transform) self.transform.call(self);
+    }
+
+    return self.html;
+};
+
+// render the DOM elements for self component
+var renderDOM = function () {
+    var self = this;
+
+    life.call(self, 'beforeRender');
+
+    // generate the HTML represenation for the node
+    self.html = renderHTML.call(self);
+
+    if (self.parent || typeof window === 'undefined') {
+        // we don't need to render a node for anything
+        // that is a child, or done on the server
+        // exit now
+        life.call(this, 'afterRender');
+        return;
+    }
+
+    // only generate a new node if we do not have
+    // a root node
+    var node = document.createElement('div');
+    node.innerHTML = self.html;
+
+    if (!self.node) {
+
+        var mount = self.mount;
+        var mountNode = document.querySelectorAll('[data-psychic-mount=' + mount + ']');
+
+        // get the node
+        if (mountNode.length > 0) {
+            self.node = mountNode[0];
+            self.isMounted = true;
+        } else {
+            self.node = node.children[0];
+        }
+
+    } else {
+
+        self.node.innerHTML = node.children[0].innerHTML;
+
+    }
+
+    // not needed for Node render
+    // set attributes
+    for (var k in self.attributes) {
+        self.node.setAttribute(k, self.attributes[k]);
+    }
+
+    if (self.node.children && self.components && self.components.length) {
+        // wire children
+        for (var i = 0, len = self.node.children.length; i < len; i++) {
+            if (self.components[i]) {
+                var old_node = self.components[i].node || 'undefined';
+                self.components[i].node = self.node.children[i];
+
+                for (var j in self.components[i].attributes) {
+                    self.components[i].node.setAttribute(j, self.components[i].attributes[j]);
+                }
+                /*
+                    recursively set child handlers
+                    from this level, the parent node is created
+                    and requires no waiting to bind children
+                */
+                var setChildHandlers = function(parent) {
+                    if (parent.components) {
+                        for (var k = 0, len = parent.components.length; k < len; k++) {
+                            handlers.call(parent.components[k]);
+                            if (parent.components[k].components.length > 0) {
+                                setChildHandlers(parent.components[k]);
+                            }
+                        }
+                    }
+                }
+                /*
+                    if the component is initialized
+                    but the node has been replaced
+                    the handlers need to be called again
+                */
+                if (!self.components[i].initialized || (old_node.outerHTML !== self.components[i].node.outerHTML)) {
+                    handlers.call(self.components[i]);
+                    setChildHandlers(self.components[i]);
+                }
+                self.components[i].initialized = true;
+            }
+        }
+    }
+
+    if (!self.initialized) {
+        handlers.call(self);
+        self.initialized = true;
+    }
+
+    life.call(this, 'afterRender');
+    return self.node;
+};
+
+// render just the components
+var renderComponents = function () {
+    var self = this;
+    self.html = '';
+    self.components = self.components || [];
+
+    for (var i = 0, len = self.components.length; i < len; i++) {
+
+        self.components[i].parent = self;
+        self.components[i].container = self.container || self.parent || self;
+        render.call(self.components[i]);
+        self.html += self.components[i].html;
+    }
+    return self.html;
+};
+
+/**
+ * Re-renders the component, replaces DOM node, if a new Definition is passed in, the component is updated.
+ * @method update
+ * @memberof psychic
+ * @param {Object} [definition] - This object describes various things about the component
+ * @returns self
+ */
+var update = function (definition) {
+    var self = this;
+
+    life.call(self, 'beforeUpdate');
+
+    if (definition) mix.call(self, definition);
+
+    render.call(self);
+
+    // run an after update hook if developer
+    // needs to know when UI component is in the DOM
+    life.call(self, 'afterUpdate');
+    return self;
+};
+
+/* DOM helpers * /
+
+/**
+ * Renders the component, but does not place into DOM. Can be used in NodeJS.
+ * @method renderInto
+ * @memberof psychic
+ * @param {Object} target - DOM Node that this component should render into
+ * @returns self
+ */
+var renderInto = function (target) {
+    var self = this;
+    self.target = target;
+    render.call(self);
+
+    if (!self.isMounted) {
+        target.appendChild(self.node);
+    }
+
+    return self;
+};
+
+/**
+ * Adds a class to the node
+ * @method addClass
+ * @memberof psychic
+ * @param {Object} _class - This string represenation of the class that is to be added
+ * return self
+ */
+var addClass = function (_class) {
+    this.node.setAttribute('class', this.node.getAttribute('class') + ' ' + _class);
+    this.html = this.node.outerHTML;
+    return this;
+};
+
+/**
+ * Removes a class to the node
+ * @method removeClass
+ * @memberof psychic
+ * @param {Object} _class - This string represenation of the class that is to be removed
+ * return self
+ */
+var removeClass = function (_class) {
+    this.node.setAttribute('class', (this.node.getAttribute('class')).replace(' ' + _class, ''));
+    this.node.getAttribute('class');
+    this.html = this.node.outerHTML;
+    return this;
+};
+
+
+/* events */
+
+/**
+ * Adds a listener for this component.
+ * @method listen
+ * @memberof psychic
+ * @param {string} event - The name of the event. The event will be added to the rendered node of this component, if no node is present, it will be added to document.
+ * @param {Function} handler - The event handler to handle when this event is dispatched.
+ * @returns self
+ */
+var listen = function (event, handler) {
+    var self = this;
+    var target = self.node ? self.node : (self.container ? self.container.node : document);
+    var events = self['events'] || [];
+
+    events.push({
+        type: event,
+        handler: handler
+    });
+
+    self['events'] = events;
+
+    var stringify = function(str) {
+        str = str.replace(/&amp;/g, "&");
+        str = str.replace(/&gt;/g, ">");
+        str = str.replace(/&lt;/g, "<");
+        str = str.replace(/&quot;/g, "\"");
+        str = str.replace(/&#039;/g, "'");
+        return str;
+    }
+
+    // handle the event with this decorater
+    var handle = function (event) {
+        // If the target has an outerHTML
+        // we should check if that matches the current listner
+        // If it doesn't that means this has no node and can be dispatched to anyone
+        if(event.target && event.target.outerHTML) {
+            var html = stringify(event.target.outerHTML);
+            if(self.html.indexOf(html) > -1) {
+                handler.call(this, event);
+            }
+        } else {
+            handler.call(this, event);
+        }
+    };
+
+    if (target && target.addEventListener) target.addEventListener(event, handle, false);
+
+    return self;
+};
+
+// attach handlers that are listed in the handlers block
+var handlers = function () {
+    var self = this;
+    for (var k in self.handlers) {
+        self.listen(k, self.handlers[k].bind(self));
+    }
+    return self;
+};
+
+/**
+ * Dispatch event on component
+ * @method dispatch
+ * @memberof psychic
+ * @param {string} Event Name - The name of the event. The event will be added to the rendered node of this component, if no node is present, it will be added to document.
+ * @returns self
+ */
+var dispatch = function (e, data) {
+
+    var self = this;
+
+    // get the dispatch target
+    // default to document
+    var target = self.node ? self.node : (self.container ? self.container.node : document);
+
+    var event = new Event(e);
+    event.data = data;
+
+    life.call(self, 'beforeDispatch');
+
+    target.dispatchEvent(event);
+
+    life.call(self, 'afterDispatch');
+
+    return self;
+};
+
+// removes all listeners
+var removeListeners = function () {
+    var self = this;
+    var target = self.node || document;
+    var events = self['events'];
+
+    for (var i = events && events.length - 1; i >= 0; i--) {
+        target.removeEventListener(events[i].type, events[i].handler, false);
+    }
+
+    self['events'] = [];
+    return self;
+};
+
+
+/* constructors */
+
+/**
+ * Represents an HTML JavaScript Component
+ * @constructor psychic
+ * @param {Object} definition - This object describes various things about the component
+ * @returns component
+ */
+var psychic = function (definition) {
+    // default is a control
+    // you can call the constructors directly
+    // if you need a non render component
+    // use psychic.component;
+    control.call(this, definition);
+};
+
+var base = function (definition) {
+    'use strict';
+
+    var self = this;
+    self.$ = {};
+
+    self['mix'] = mix;
+
+    // setup self components lazy style `mixin`
+    mix.call(self, definition);
+
+    if (!self.components) self.components = [];
+
+    for (var i = 0, len = self.components.length; i < len; i++) {
+        // lazily name the components on render
+        // don't re-ref is already named, should throw
+        // @todo throw
+        if (self.components[i].name && !self.$[self.components[i].name]) {
+            self.$[self.components[i].name] = self.components[i];
+        }
+    }
+};
+
+// component has no UI needs
+var component = psychic.component = function (def) {
+    var self = this;
+    self['listen'] = listen;
+    self['dispatch'] = debounce(dispatch, 80);
+    self['dispatchImmediate'] = dispatch;
+    self['destroy'] = destroy;
+    base.call(this, def);
+};
+
+// control renders as UI, comes with UI bits
+var control = psychic.control = function (def) {
+    var self = this;
+    self['update'] = update;
+    self['renderInto'] = renderInto;
+    self['render'] = render;
+    self['addClass'] = addClass;
+    self['removeClass'] = removeClass;
+    component.call(this, def);
+};
+
+// set some meta
+psychic.version = '0.0.1';
+
+module.exports = psychic;
+
+},{}],12:[function(require,module,exports){
+'use strict';
+
+function router() {
+
+    var routes = [];
+    var unknown;
+
+	/*
+		@define: intializes the router class
+		@requires: "func": {
+			type: function,
+			parameters: function(route),
+			define: "this is used for when a hash is not found"
+		}
+		@example:
+		var router = require('./router')
+        router.intitialize(function(route) {
+			console.log(route + 'not found');
+		});
+	*/
+    var intitialize = function(func) {
+        unknown = func;
+        window.onhashchange = hashchange;
+        hashchange();
+    };
+
+	/*
+		@define: is called when a hash change occurs
+		@requires: none
+		@returns: none
+	*/
+    var hashchange = function() {
+        var hash = window.location.hash.replace('#', '');
+        if (routes[hash]) {
+            routes[hash]();
+        } else {
+            unknown(hash);
+        }
+    };
+
+	/*
+		@define: binds hash events to global window.routes
+		@requires: "hash": {type: String}
+		@requires: "func": {type: Function}
+		@example:
+		var router = require('./router');
+		router.bind('hello', function() {
+			alert('hellow world');
+		});
+	*/
+    var bind = function(hash, func) {
+        if (typeof func === 'function') {
+            routes[hash] = func;
+        } else {
+            throw new TypeError('func needs to be a function');
+        }
+    };
+
+	/*
+		@define: changes the hash of the window object
+		@requires: "hash": {type: String}
+		@example:
+		var router = require('./router');
+		router.change('hello');
+	*/
+    var change = function(hash) {
+		/*
+			This could happen if the user is already on a hash event
+			and restarts the app
+		 */
+        if (location.href.substring(location.href.indexOf('#')) === '#' + hash) {
+            hashchange();
+        } else {
+            location.href = '#' + hash;
+        }
+    };
+
+    return {
+        bind: bind,
+        change: change,
+        routes: routes,
+        intitialize: intitialize
+    };
+
+}
+
+// make sure that we are making this a singleton
+var instance;
+module.exports = instance = instance || router();
+
+},{}]},{},[7]);
