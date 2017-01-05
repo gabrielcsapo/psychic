@@ -3,7 +3,7 @@
 [![Build Status](https://travis-ci.org/gabrielcsapo/psychic.svg?branch=master)](https://travis-ci.org/gabrielcsapo/psychic)
 [![Coverage Status](https://coveralls.io/repos/github/gabrielcsapo/psychic/badge.svg?branch=master)](https://coveralls.io/github/gabrielcsapo/psychic?branch=master)
 
-Tiny single purpose view engine, help componentize your javascript. Chemical will help you make super performant UI apps.
+Tiny single purpose view engine, help componentize your javascript. Psychic will help you make super performant UI apps.
 
 No abstractions, limit sugar. Keep your self close to the browser, but create compostable, and reusable UIs.
 
@@ -20,7 +20,7 @@ Compatible with Google Closure Compiler
 * Supports Progressive Enhancement, with Auto-Mounting
     * Render the view on the server
     * Run the client along side the server generated HTML
-    * Chemical upgrades the components on the page
+    * Psychic upgrades the components on the page
     * Mix with Webpack entry points for great perf
 * Sugar'd APIs to help get things done
     * events
@@ -37,15 +37,15 @@ npm install psychic --save-dev
 
 ## Basics
 
-Chemical tries to be ultra fast by limiting the actual representation from the declarative api, to rendered DOM elements.
+Psychic tries to be ultra fast by limiting the actual representation from the declarative api, to rendered DOM elements.
 
 We generate HTML based on your outer Control's components. Events are wired to a single rendered container, utilizing a state machine like Redux - we can achieve some crazy performance.
 
 Extend any component at runtime using our declarative API, or leverage defining prototypes for parse time performance improvements!
 
-Chemical helps you manage events. We rely on native event implementations, but provide a small amount of sugar to abstract on them for you. Including condensing events to a single rendered root, detaching and reattaching at render time!
+Psychic helps you manage events. We rely on native event implementations, but provide a small amount of sugar to abstract on them for you. Including condensing events to a single rendered root, detaching and reattaching at render time!
 
-Chemical has a full stack of lifeCycle events! You can listen for events that range from `afterRender`, to `beforeUpdate`.
+Psychic has a full stack of lifeCycle events! You can listen for events that range from `afterRender`, to `beforeUpdate`.
 
 It's amazing we fit all of this into less than 2kb of compressed space! For an additional 1kb you can bring our state machine with! That's only 3kb gzipped to get similar functionality as ReactJS + Redux!
 
@@ -116,7 +116,7 @@ component.renderInto(document.body);
 
 # API
 
-Chemical currently has two core blocks to build with, `control` and `component`. A `control` is used when you expect a `component` to render. It adds a bit of extra decoration to a base component. The API is small and consists of these calls:
+Psychic currently has two core blocks to build with, `control` and `component`. A `control` is used when you expect a `component` to render. It adds a bit of extra decoration to a base component. The API is small and consists of these calls:
 
 * `component`
  * methods
@@ -268,7 +268,7 @@ control.render();
 
 ## Declarative Syntax API
 
-Components are mainly composed in Chemical using the declarative syntax. This allows natural composition that most developers are familiar with in view libraries.
+Components are mainly composed in Psychic using the declarative syntax. This allows natural composition that most developers are familiar with in view libraries.
 
 ```javascript
 // the base default declarative syntax for a control object
@@ -301,7 +301,7 @@ var control = new Control(definition);
 
 ## Imperative Syntax API
 
-Sometimes we want to extend components for reusability. We also want to get some performance gains when defining new components. Chemical leans heavily on prototypal inheritance to get some nice performance from our paradigm.
+Sometimes we want to extend components for reusability. We also want to get some performance gains when defining new components. Psychic leans heavily on prototypal inheritance to get some nice performance from our paradigm.
 
 ```javascript
 var Control = require('psychic').control;
@@ -314,7 +314,7 @@ module.exports = function(data) {
 
 ## LifeCycle
 
-Chemical provides component LifeCycle events. `wip`
+Psychic provides component LifeCycle events. `wip`
 
 Here is a list of all the LifeCycle events that can be defined
 
@@ -325,7 +325,7 @@ Here is a list of all the LifeCycle events that can be defined
 
 ## Mounting
 
-Chemical allows you to render components on the server, and then mount them client side. It requires little to no effort on your part.
+Psychic allows you to render components on the server, and then mount them client side. It requires little to no effort on your part.
 Simply give your components a `name`.
 
 ```jsx
