@@ -9,7 +9,7 @@
     "coveralls": "istanbul cover ./node_modules/mocha/bin/_mocha --report lcovonly -- -R spec && cat ./coverage/lcov.info | ./node_modules/coveralls/bin/coveralls.js && rm -rf ./coverage",
     "lint": "eslint .;",
     "test": "mocha",
-    "generate-docs": "node_modules/.bin/jsdoc -c jsdoc.json"
+    "generate-docs": "cp -r ./node_modules/todomvc-common ./docs/example/assets/todomvc-common;cp -r ./node_modules/todomvc-app-css ./docs/example/assets/todomvc-app-css; jsdoc -c jsdoc.json"
   },
   "repository": {
     "type": "git",
@@ -52,6 +52,8 @@
     "mocha": "^3.2.0",
     "mocha-lcov-reporter": "^1.2.0",
     "psychic-ui": "^0.4.0",
-    "rewire": "2.5.1"
+    "rewire": "2.5.1",
+    "todomvc-app-css": "^2.1.0",
+    "todomvc-common": "^1.0.3"
   }
 }
