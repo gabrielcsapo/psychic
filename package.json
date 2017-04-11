@@ -9,7 +9,7 @@
     "coveralls": "istanbul cover ./node_modules/mocha/bin/_mocha --report lcovonly -- -R spec && cat ./coverage/lcov.info | ./node_modules/coveralls/bin/coveralls.js && rm -rf ./coverage",
     "lint": "eslint .;",
     "test": "mocha",
-    "generate-docs": "cp -r ./node_modules/todomvc-common ./docs/example/assets/todomvc-common;cp -r ./node_modules/todomvc-app-css ./docs/example/assets/todomvc-app-css; jsdoc -c jsdoc.json"
+    "generate-docs": "cp ./node_modules/psychic-ui/dist/psychic-min.css ./docs/lib/psychic-ui/; cp -r ./node_modules/todomvc-common ./docs/example/assets/todomvc-common;cp -r ./node_modules/todomvc-app-css ./docs/example/assets/todomvc-app-css; jsdoc -c jsdoc.json"
   },
   "repository": {
     "type": "git",
@@ -41,7 +41,7 @@
   },
   "homepage": "http://gabrielcsapo.com/psychic",
   "devDependencies": {
-    "browserify": "^13.1.1",
+    "browserify": "^14.3.0",
     "chai": "^3.5.0",
     "coveralls": "^2.11.15",
     "istanbul": "^0.4.5",
@@ -51,8 +51,8 @@
     "minami": "^1.1.1",
     "mocha": "^3.2.0",
     "mocha-lcov-reporter": "^1.2.0",
-    "psychic-ui": "^0.4.0",
-    "rewire": "2.5.1",
+    "psychic-ui": "^1.0.6",
+    "rewire": "^2.5.2",
     "todomvc-app-css": "^2.1.0",
     "todomvc-common": "^1.0.3"
   }
