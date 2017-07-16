@@ -1,5 +1,7 @@
 # psychic
 
+[![Greenkeeper badge](https://badges.greenkeeper.io/gabrielcsapo/psychic.svg)](https://greenkeeper.io/)
+
 [![Build Status](https://travis-ci.org/gabrielcsapo/psychic.svg?branch=master)](https://travis-ci.org/gabrielcsapo/psychic)
 [![Coverage Status](https://coveralls.io/repos/github/gabrielcsapo/psychic/badge.svg?branch=master)](https://coveralls.io/github/gabrielcsapo/psychic?branch=master)
 
