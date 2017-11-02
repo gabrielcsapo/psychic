@@ -1,3 +1,5 @@
+> DEPRECATED: THIS WILL NO LONGER BE UNDER DEVELOPMENT
+
 # psychic
 
 [![Build Status](https://travis-ci.org/gabrielcsapo/psychic.svg?branch=master)](https://travis-ci.org/gabrielcsapo/psychic)
